@@ -1,7 +1,8 @@
 # clinsight_pipeline.py
 # ✅ LDA topic probabilities + TF-IDF (unigrams + bigrams) combined for better rating prediction
 # ✅ Keeps your theme-level + per-review explainability using ONLY the topic-part coefficients
-
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
 import os
 import re
 import json
