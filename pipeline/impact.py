@@ -23,8 +23,15 @@ def run_impact(df, topic_prob, rating_col="Ratings"):
     X = topic_prob
     y = df[rating_col].values
 
-    model = Pipeline([("scaler", StandardScaler()), ("reg", LinearRegression())])
+# Tests multiple alpha values automatically via cross-validation
+    model = Pipeline([
+        ("scaler", StandardScaler()),
+        ("reg", RidgeCV(alphas=[0.01, 0.1, 0.5, 1.0, 5.0, 10.0]))
+    ])
     model.fit(X, y)
+
+    # See which alpha won
+    print("Best alpha:", model.named_steps["reg"].alpha_)
     intercept = model.named_steps["reg"].intercept_
     coefs     = model.named_steps["reg"].coef_
 

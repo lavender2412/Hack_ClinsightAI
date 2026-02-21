@@ -23,7 +23,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import RidgeCV
 from sklearn.model_selection import KFold, cross_val_score
 
 
@@ -241,8 +241,15 @@ def main():
     print("Running regression + bootstrap (~30s)...")
     X = topic_prob
     y = df[RATING_COL].values
-    model = Pipeline([("scaler", StandardScaler()), ("reg", LinearRegression())])
+    #model = Pipeline([("scaler", StandardScaler()), ("reg", LinearRegression())])
+    #model.fit(X, y)
+    # Tests multiple alpha values automatically via cross-validation
+    model = Pipeline([
+            ("scaler", StandardScaler(with_mean=False)),
+            ("reg", Ridge(alpha=5967.90))
+        ])    
     model.fit(X, y)
+
     intercept = model.named_steps["reg"].intercept_
     coefs     = model.named_steps["reg"].coef_
 

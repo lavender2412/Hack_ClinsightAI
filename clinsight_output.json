@@ -12,9 +12,9 @@
     {
       "theme": "Consultation & Positive Patient Experience",
       "frequency_percentage": 30.4,
-      "rating_impact": 0.197,
-      "severity_score": 0.0708,
-      "risk_score": 0.0604,
+      "rating_impact": 0.196,
+      "severity_score": 0.0703,
+      "risk_score": 0.06,
       "issue_class": "Systemic",
       "confidence_stability": 0.854,
       "evidence_samples": [
@@ -26,9 +26,9 @@
     {
       "theme": "Clinical Care & Treatment Quality",
       "frequency_percentage": 21.8,
-      "rating_impact": -0.211,
-      "severity_score": 0.0603,
-      "risk_score": 0.0503,
+      "rating_impact": -0.21,
+      "severity_score": 0.0598,
+      "risk_score": 0.0499,
       "issue_class": "Systemic",
       "confidence_stability": 0.834,
       "evidence_samples": [
@@ -40,9 +40,9 @@
     {
       "theme": "Overall Service & Facility Cleanliness",
       "frequency_percentage": 15.1,
-      "rating_impact": 0.139,
-      "severity_score": 0.0257,
-      "risk_score": 0.02,
+      "rating_impact": 0.137,
+      "severity_score": 0.0255,
+      "risk_score": 0.0199,
       "issue_class": "Recurring",
       "confidence_stability": 0.778,
       "evidence_samples": [
@@ -55,8 +55,8 @@
       "theme": "Wait Time & Operational Efficiency",
       "frequency_percentage": 13.0,
       "rating_impact": -0.093,
-      "severity_score": 0.0162,
-      "risk_score": 0.0093,
+      "severity_score": 0.0161,
+      "risk_score": 0.0092,
       "issue_class": "Recurring",
       "confidence_stability": 0.574,
       "evidence_samples": [
@@ -68,8 +68,8 @@
     {
       "theme": "Emergency Service Failures",
       "frequency_percentage": 19.8,
-      "rating_impact": -0.059,
-      "severity_score": 0.0147,
+      "rating_impact": -0.058,
+      "severity_score": 0.0146,
       "risk_score": 0.0058,
       "issue_class": "Recurring",
       "confidence_stability": 0.397,
@@ -109,7 +109,7 @@
       "theme": "Clinical Care & Treatment Quality",
       "recommendation": "Standardize clinical pathways; introduce peer review + checklist adherence; increase follow-up quality checks.",
       "effort": "High Effort",
-      "expected_rating_lift": "+0.03",
+      "expected_rating_lift": "+0.02",
       "confidence": 0.05,
       "issue_class": "Systemic",
       "kpis": [
