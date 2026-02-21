@@ -11,12 +11,21 @@ st.set_page_config(page_title="ClinsightAI Dashboard", layout="wide")
 st.title("🏥 ClinsightAI — Healthcare Review Intelligence Dashboard")
 
 # ── Load CSVs ─────────────────────────────────────────────────────────────────
+
 @st.cache_data
 def load_data():
     theme_df   = pd.read_csv("theme_level_outputs.csv")
     reviews_df = pd.read_csv("review_level_outputs.csv")
     roadmap_df = pd.read_csv("task4_action_roadmap.csv")
+    
+    # Rename columns that changed when TF-IDF was added
+    theme_df = theme_df.rename(columns={
+        "impact_coefficient_topic_part": "impact_coefficient",
+        "abs_impact_topic_part":         "abs_impact",
+    })
+    
     return theme_df, reviews_df, roadmap_df
+
 
 theme_df, reviews_df, roadmap_df = load_data()
 
