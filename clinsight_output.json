@@ -12,7 +12,6 @@
     {
       "theme": "Consultation & Positive Patient Experience",
       "frequency_percentage": 30.4,
-      "present_frequency": 35.9,
       "rating_impact": 0.197,
       "severity_score": 0.0708,
       "risk_score": 0.0604,
@@ -27,7 +26,6 @@
     {
       "theme": "Clinical Care & Treatment Quality",
       "frequency_percentage": 21.8,
-      "present_frequency": 28.5,
       "rating_impact": -0.211,
       "severity_score": 0.0603,
       "risk_score": 0.0503,
@@ -42,7 +40,6 @@
     {
       "theme": "Overall Service & Facility Cleanliness",
       "frequency_percentage": 15.1,
-      "present_frequency": 18.6,
       "rating_impact": 0.139,
       "severity_score": 0.0257,
       "risk_score": 0.02,
@@ -57,7 +54,6 @@
     {
       "theme": "Wait Time & Operational Efficiency",
       "frequency_percentage": 13.0,
-      "present_frequency": 17.4,
       "rating_impact": -0.093,
       "severity_score": 0.0162,
       "risk_score": 0.0093,
@@ -72,7 +68,6 @@
     {
       "theme": "Emergency Service Failures",
       "frequency_percentage": 19.8,
-      "present_frequency": 25.1,
       "rating_impact": -0.059,
       "severity_score": 0.0147,
       "risk_score": 0.0058,
@@ -88,27 +83,118 @@
   "improvement_roadmap": [
     {
       "priority": 1,
-      "theme": "Clinical Care & Treatment Quality",
-      "recommendation": "Implement peer review program and clinical quality audits",
-      "expected_rating_lift": "+0.4",
-      "confidence": 0.834,
-      "issue_class": "Systemic"
+      "theme": "Consultation & Positive Patient Experience",
+      "recommendation": "Improve communication scripts and consultation transparency; provide discharge instructions and next-steps summary.",
+      "effort": "Quick Win",
+      "expected_rating_lift": "+0.03",
+      "confidence": 0.06,
+      "issue_class": "Systemic",
+      "kpis": [
+        {
+          "kpi": "Communication complaints per 100 visits",
+          "target": "< 2"
+        },
+        {
+          "kpi": "Patient satisfaction (post-visit survey)",
+          "target": "> 4.2/5"
+        },
+        {
+          "kpi": "Instruction clarity score (%)",
+          "target": "> 90%"
+        }
+      ]
     },
     {
       "priority": 2,
-      "theme": "Wait Time & Operational Efficiency",
-      "recommendation": "Optimise appointment scheduling workflow and reduce patient wait times",
-      "expected_rating_lift": "+0.6",
-      "confidence": 0.574,
-      "issue_class": "Recurring"
+      "theme": "Clinical Care & Treatment Quality",
+      "recommendation": "Standardize clinical pathways; introduce peer review + checklist adherence; increase follow-up quality checks.",
+      "effort": "High Effort",
+      "expected_rating_lift": "+0.03",
+      "confidence": 0.05,
+      "issue_class": "Systemic",
+      "kpis": [
+        {
+          "kpi": "Clinical complaints per 100 visits",
+          "target": "< 2"
+        },
+        {
+          "kpi": "Follow-up completion rate (%)",
+          "target": "> 80%"
+        },
+        {
+          "kpi": "Readmission rate (if available)",
+          "target": "Decrease MoM"
+        }
+      ]
     },
     {
       "priority": 3,
+      "theme": "Overall Service & Facility Cleanliness",
+      "recommendation": "Strengthen housekeeping SLA and hourly rounding; implement rapid-response cleaning for high-traffic areas.",
+      "effort": "Quick Win",
+      "expected_rating_lift": "+0.01",
+      "confidence": 0.02,
+      "issue_class": "Recurring",
+      "kpis": [
+        {
+          "kpi": "Cleanliness complaints per 100 visits",
+          "target": "< 2"
+        },
+        {
+          "kpi": "Room turnaround time (minutes)",
+          "target": "< 30"
+        },
+        {
+          "kpi": "Hygiene audit score (%)",
+          "target": "> 95%"
+        }
+      ]
+    },
+    {
+      "priority": 4,
+      "theme": "Wait Time & Operational Efficiency",
+      "recommendation": "Optimize appointment scheduling and triage workflow; add capacity buffers during peak hours.",
+      "effort": "High Effort",
+      "expected_rating_lift": "+0.0",
+      "confidence": 0.009,
+      "issue_class": "Recurring",
+      "kpis": [
+        {
+          "kpi": "Avg waiting time (minutes)",
+          "target": "< 15"
+        },
+        {
+          "kpi": "On-time appointment rate (%)",
+          "target": "> 85%"
+        },
+        {
+          "kpi": "Patients leaving without being seen (%)",
+          "target": "< 2%"
+        }
+      ]
+    },
+    {
+      "priority": 5,
       "theme": "Emergency Service Failures",
-      "recommendation": "Establish emergency response protocols and dedicated triage staff",
-      "expected_rating_lift": "+0.5",
-      "confidence": 0.397,
-      "issue_class": "Recurring"
+      "recommendation": "Improve ER staffing and triage; standardize escalation protocols; implement real-time queue visibility.",
+      "effort": "High Effort",
+      "expected_rating_lift": "+0.0",
+      "confidence": 0.006,
+      "issue_class": "Recurring",
+      "kpis": [
+        {
+          "kpi": "Door-to-provider time (minutes)",
+          "target": "< 20"
+        },
+        {
+          "kpi": "ER complaint rate per 100 visits",
+          "target": "< 3"
+        },
+        {
+          "kpi": "Escalations resolved within SLA (%)",
+          "target": "> 90%"
+        }
+      ]
     }
   ]
 }
