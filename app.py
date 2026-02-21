@@ -11,21 +11,19 @@ st.set_page_config(page_title="ClinsightAI Dashboard", layout="wide")
 st.title("🏥 ClinsightAI — Healthcare Review Intelligence Dashboard")
 
 # ── Load CSVs ─────────────────────────────────────────────────────────────────
-
 @st.cache_data
 def load_data():
     theme_df   = pd.read_csv("theme_level_outputs.csv")
     reviews_df = pd.read_csv("review_level_outputs.csv")
     roadmap_df = pd.read_csv("task4_action_roadmap.csv")
-    
+
     # Rename columns that changed when TF-IDF was added
     theme_df = theme_df.rename(columns={
         "impact_coefficient_topic_part": "impact_coefficient",
         "abs_impact_topic_part":         "abs_impact",
     })
-    
-    return theme_df, reviews_df, roadmap_df
 
+    return theme_df, reviews_df, roadmap_df
 
 theme_df, reviews_df, roadmap_df = load_data()
 
@@ -94,6 +92,15 @@ with tab1:
                autopct='%1.1f%%', startangle=140)
         ax.set_title("Theme Distribution")
         st.pyplot(fig); plt.close(fig)
+
+    st.divider()
+    st.subheader("Severity Heatmap")
+    fig, ax = plt.subplots(figsize=(5, 4))
+    sns.heatmap(theme_df.set_index("theme_label")[["severity_score"]],
+                annot=True, fmt=".4f", cmap="Reds", ax=ax)
+    st.pyplot(fig); plt.close(fig)
+
+
 # ════════════════════════════════════════════════════════════════════════════
 # TAB 2 — Rating Impact
 # ════════════════════════════════════════════════════════════════════════════
@@ -138,14 +145,6 @@ with tab2:
     st.pyplot(fig); plt.close(fig)
 
     st.divider()
-    
-    # DEBUG — remove after fixing
-    st.markdown("### Debug Info")
-    st.write("CV R2 mean value:", theme_df['cv_r2_mean'].iloc[0])
-    st.write("CV RMSE mean value:", theme_df['cv_rmse_mean'].iloc[0])
-    st.write("CSV columns:", theme_df.columns.tolist())
-    st.dataframe(theme_df[['theme_label', 'cv_r2_mean', 'cv_rmse_mean']].head())
-
     st.subheader("Model Robustness")
     m1, m2, m3 = st.columns(3)
     m1.metric("Cross-validated R²",   f"{theme_df['cv_r2_mean'].iloc[0]:.3f}")
@@ -181,12 +180,6 @@ with tab3:
                     x="risk_score", y="theme_label", palette="Reds_d", ax=ax)
         ax.set_title("Risk = Frequency × |Impact| × Stability")
         st.pyplot(fig); plt.close(fig)
-    with col2:
-        st.subheader("Severity Heatmap")
-        fig, ax = plt.subplots(figsize=(5, 4))
-        sns.heatmap(theme_df.set_index("theme_label")[["severity_score"]],
-                    annot=True, fmt=".4f", cmap="Reds", ax=ax)
-        st.pyplot(fig); plt.close(fig)
 
     st.divider()
     st.subheader("Issue Classification Breakdown")
@@ -220,7 +213,7 @@ with tab4:
     high_impact_cutoff = np.median(abs_impacts)
 
     def classify_live(freq, abs_impact):
-        if freq < isolated_thr:                                    return "Isolated"
+        if freq < isolated_thr:                                       return "Isolated"
         if freq >= systemic_thr and abs_impact >= high_impact_cutoff: return "Systemic"
         return "Recurring"
 
@@ -247,10 +240,10 @@ with tab4:
     task3_df = pd.DataFrame(rows)
     risk_col = "risk_score_simple" if risk_mode.startswith("Simple") else "risk_score_confidence"
 
-    if show_only == "Systemic only":    task3_df = task3_df[task3_df["issue_class"] == "Systemic"]
-    elif show_only == "Recurring only": task3_df = task3_df[task3_df["issue_class"] == "Recurring"]
-    elif show_only == "Isolated only":  task3_df = task3_df[task3_df["issue_class"] == "Isolated"]
-    if impact_filter == "Negative impact only": task3_df = task3_df[task3_df["impact_coefficient"] < 0]
+    if show_only == "Systemic only":      task3_df = task3_df[task3_df["issue_class"] == "Systemic"]
+    elif show_only == "Recurring only":   task3_df = task3_df[task3_df["issue_class"] == "Recurring"]
+    elif show_only == "Isolated only":    task3_df = task3_df[task3_df["issue_class"] == "Isolated"]
+    if impact_filter == "Negative impact only":   task3_df = task3_df[task3_df["impact_coefficient"] < 0]
     elif impact_filter == "Positive impact only": task3_df = task3_df[task3_df["impact_coefficient"] > 0]
     task3_df = task3_df.sort_values(risk_col, ascending=False)
 
@@ -292,7 +285,6 @@ with tab4:
 with tab5:
     st.header("Task 4 — Business Action Roadmap")
 
-    # Roadmap table
     st.subheader("Prioritized Improvement Roadmap (Theme Level)")
     show_bucket = st.selectbox("Filter by effort bucket", ["All", "Quick Wins", "High Effort"])
     view = roadmap_df.copy()
@@ -303,7 +295,6 @@ with tab5:
         use_container_width=True
     )
 
-    # KPIs for selected theme
     st.subheader("KPIs for Selected Theme")
     theme_pick5 = st.selectbox("Pick a theme to view KPIs", roadmap_df["theme_label"].tolist(), key="t5_kpi")
     kpi_row     = roadmap_df[roadmap_df["theme_label"] == theme_pick5].iloc[0]
@@ -314,8 +305,6 @@ with tab5:
         st.write(f"- **{item['kpi']}** → Target: **{item['target']}**")
 
     st.divider()
-
-    # Per-review recommendations
     st.subheader("Per-Review Recommendations (Data Point Level)")
     t4_min, t4_max = st.slider("Filter rating range", 1, 5, (1, 5), key="t5_rating")
     theme_filter_t5 = st.selectbox(
@@ -336,8 +325,6 @@ with tab5:
     ]].head(200), use_container_width=True)
 
     st.divider()
-
-    # Drilldown
     st.subheader("Drilldown: One Review → Recommendation + KPI Pack")
     if len(t5_filtered) > 0:
         t5_idx = st.number_input("Pick a row index (0..N-1 of filtered list)",
@@ -355,7 +342,6 @@ with tab5:
         else:
             for item in kpis:
                 st.write(f"- **{item['kpi']}** → Target: **{item['target']}**")
-        # GPT quick wins / high effort (only populated if USE_GPT=True)
         try:
             q = json.loads(t5_row.get("quick_wins", "[]"))
             h = json.loads(t5_row.get("high_effort_fixes", "[]"))
