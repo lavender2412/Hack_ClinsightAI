@@ -32,6 +32,32 @@ h1, h2, h3 {
 }
 [data-testid="stSidebar"] * { color: #e2e8f0 !important; }
 
+/* Black selectboxes in sidebar */
+[data-testid="stSidebar"] [data-baseweb="select"] > div:first-child {
+    background-color: #000000 !important;
+    border: 1px solid #374151 !important;
+    border-radius: 8px !important;
+}
+[data-testid="stSidebar"] [data-baseweb="select"] * {
+    color: #ffffff !important;
+}
+[data-testid="stSidebar"] [data-baseweb="select"] svg {
+    fill: #ffffff !important;
+}
+/* Dropdown menu (the open list) */
+[data-baseweb="popover"] [data-baseweb="menu"] {
+    background-color: #000000 !important;
+    border: 1px solid #374151 !important;
+}
+[data-baseweb="popover"] [role="option"] {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+}
+[data-baseweb="popover"] [role="option"]:hover,
+[data-baseweb="popover"] [aria-selected="true"] {
+    background-color: #1f2937 !important;
+}
+
 [data-testid="metric-container"] {
     background: #ffffff;
     border: 1px solid #e2e8f0;
@@ -255,12 +281,9 @@ with tab2:
             size=16,
             line=dict(color="#ffffff", width=2.5),
         ),
-    text=[f"{c:+.4f}" for c in impact_plot["Coefficient"]],
-    textposition=[
-        "top left" if c >= 0 else "top right"
-        for c in impact_plot["Coefficient"]
-    ],
-    textfont=dict(size=11, color="#475569", family="DM Sans"),
+        text=[f"  {c:+.4f}" for c in impact_plot["Coefficient"]],
+        textposition="middle right",
+        textfont=dict(size=11, color="#475569", family="DM Sans"),
         hovertemplate="<b>%{customdata}</b><br>Coefficient: %{x:.4f}<extra></extra>",
         customdata=impact_plot["Theme"],
         showlegend=False,
@@ -284,14 +307,12 @@ with tab2:
         title="Theme Impact on Star Rating",
         xaxis_title="Regression Coefficient",
         height=420,
-        margin=dict(l=320, r=80, t=48, b=48),  # ← wider left margin
         legend=dict(orientation="h", y=1.08, x=0),
         yaxis=dict(
             tickmode="array",
             tickvals=list(range(len(impact_plot))),
             ticktext=impact_plot["Theme"].tolist(),
             tickfont=dict(size=12),
-            automargin=True,   # ← also add this
             gridcolor="#e2e8f0",
         ),
     )
@@ -309,23 +330,17 @@ with tab2:
         "avg_in_1star": "1-Star Reviews", "avg_in_5star": "5-Star Reviews"
     })
     fig = px.bar(
-        star_df, x="Avg Topic Probability", y="theme_label",
+        star_df, x="theme_label", y="Avg Topic Probability",
         color="Star Group",
-        color_discrete_map={
-            "1-Star Reviews": "#86efac",   # light green
-            "5-Star Reviews": "#16a34a",   # deep green
-        },
+        color_discrete_map={"1-Star Reviews": NEG_COLOR, "5-Star Reviews": POS_COLOR},
         barmode="group",
-        orientation="h",
     )
+    fig.update_layout(xaxis_tickangle=-20, xaxis_tickfont_size=11)
     apply_layout(fig, title="Avg Topic Probability: 1-Star vs 5-Star Reviews",
-                 xaxis_title="Avg Topic Probability", yaxis_title="",
-                 height=380,
-                 margin=dict(l=260, r=40, t=48, b=40),
+                 xaxis_title="", yaxis_title="Avg Topic Probability", height=380,
                  legend=dict(title="", orientation="h", y=1.08))
-    fig.update_traces(marker_line_width=0)
     st.plotly_chart(fig, use_container_width=True)
-    
+
     st.divider()
     st.subheader("Model Robustness")
     m1, m2, m3 = st.columns(3)
@@ -645,7 +660,8 @@ with tab6:
 
     st.dataframe(filtered[[
         "Feedback", "Ratings", "predicted_rating", "residual",
-        "theme_label", "dominant_contributor_theme"
+        "theme_label", "dominant_contributor_theme",
+        "most_positive_theme", "most_negative_theme"
     ]].head(300), use_container_width=True)
 
     st.divider()
