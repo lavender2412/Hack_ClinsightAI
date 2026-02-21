@@ -645,8 +645,7 @@ with tab6:
 
     st.dataframe(filtered[[
         "Feedback", "Ratings", "predicted_rating", "residual",
-        "theme_label", "dominant_contributor_theme",
-        "most_positive_theme", "most_negative_theme"
+        "theme_label", "dominant_contributor_theme"
     ]].head(300), use_container_width=True)
 
     st.divider()
