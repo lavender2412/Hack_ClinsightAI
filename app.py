@@ -1,93 +1,34 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import re
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import seaborn as sns
 import networkx as nx
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.decomposition import LatentDirichletAllocation
-from sklearn.metrics.pairwise import cosine_similarity
-import nltk
-from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
 
-nltk.download('stopwords', quiet=True)
-nltk.download('wordnet', quiet=True)
+from pipeline.preprocess import clean_dataframe
+from pipeline.topic_model import run_lda, TOPIC_LABELS, N_TOPICS
 
-# ── Page config ──────────────────────────────────────────────────────────────
+# ── Page config ───────────────────────────────────────────────────────────────
 st.set_page_config(page_title="ClinsightAI", layout="wide")
 st.title("🏥 ClinsightAI — Healthcare Review Intelligence")
 
-# ── Load & run pipeline (cached so it only runs once) ────────────────────────
+# ── Run pipeline (cached) ─────────────────────────────────────────────────────
 @st.cache_data
-def run_pipeline():
-    df = pd.read_csv("hospital.csv")
-    df = df[['Feedback']].dropna().reset_index(drop=True)
-
-    stop_words = set(stopwords.words('english'))
-    lemmatizer = WordNetLemmatizer()
-
-    def preprocess(text):
-        text = text.lower()
-        text = re.sub(r'[^a-zA-Z\s]', '', text)
-        words = text.split()
-        words = [lemmatizer.lemmatize(w) for w in words if w not in stop_words]
-        return " ".join(words)
-
-    df['clean_text'] = df['Feedback'].apply(preprocess)
-
-    vectorizer = CountVectorizer(max_df=0.9, min_df=5, stop_words='english')
-    dtm = vectorizer.fit_transform(df['clean_text'])
-
-    lda = LatentDirichletAllocation(n_components=5, random_state=18, learning_method='batch')
-    lda.fit(dtm)
-
-    topic_probabilities = lda.transform(dtm)
-    df['dominant_topic'] = topic_probabilities.argmax(axis=1)
-
-    topic_labels = {
-        0: "Clinical Care Quality",
-        1: "Overall Service & Cleanliness",
-        2: "Emergency Service Issues",
-        3: "Consultation Experience",
-        4: "Wait Time & Efficiency"
-    }
-    df['theme'] = df['dominant_topic'].map(topic_labels)
-
-    theme_counts = df['theme'].value_counts()
-    theme_freq   = theme_counts / len(df)
-
-    avg_prob = topic_probabilities.mean(axis=0)
-    ordered_themes = [topic_labels[i] for i in range(5)]
-    ordered_freq   = theme_freq.reindex(ordered_themes).fillna(0).values
-    severity_scores = ordered_freq * np.abs(avg_prob)
-
-    severity_df = pd.DataFrame({
-        "Theme":           ordered_themes,
-        "Frequency (%)":   (ordered_freq * 100).round(1),
-        "Avg Probability": avg_prob.round(3),
-        "Severity Score":  severity_scores.round(4)
-    }).sort_values("Severity Score", ascending=False).reset_index(drop=True)
-
-    feature_names = vectorizer.get_feature_names_out()
-    topic_words = {}
-    for idx, topic in enumerate(lda.components_):
-        top_words = [feature_names[i] for i in topic.argsort()[:-11:-1]]
-        topic_words[topic_labels[idx]] = top_words
-
-    topic_similarity = cosine_similarity(lda.components_)
-
-    return df, theme_counts, theme_freq, severity_df, topic_words, topic_similarity, topic_labels
-
+def load_data():
+    df_raw = pd.read_csv("hospital.csv")
+    df = clean_dataframe(df_raw, text_col='Feedback')
+    df, topic_probabilities, topic_words, theme_counts, theme_freq, severity_df, topic_similarity = run_lda(df)
+    return df, topic_probabilities, topic_words, theme_counts, theme_freq, severity_df, topic_similarity
 
 with st.spinner("Running analysis on hospital reviews..."):
-    df, theme_counts, theme_freq, severity_df, topic_words, topic_similarity, topic_labels = run_pipeline()
+    df, topic_probabilities, topic_words, theme_counts, theme_freq, severity_df, topic_similarity = load_data()
 
 st.success(f"✅ Analysed {len(df):,} reviews")
 
-# ── Tabs ─────────────────────────────────────────────────────────────────────
+# ── Tabs ──────────────────────────────────────────────────────────────────────
 tab1, tab2 = st.tabs(["📊 Theme Discovery", "⚠️ Severity & Risk"])
+
 
 # ════════════════════════════════════════════════════════════════════════════
 # TAB 1 — Theme Discovery
@@ -117,18 +58,18 @@ with tab1:
     st.divider()
 
     st.subheader("Top Words per Topic")
-    cols = st.columns(5)
+    cols = st.columns(N_TOPICS)
     for i, (theme, words) in enumerate(topic_words.items()):
         with cols[i]:
             st.markdown(f"**{theme}**")
-            for w in words:
+            for w in words[:10]:
                 st.markdown(f"- {w}")
 
     st.divider()
 
     st.subheader("Topic Similarity Network (Cosine Similarity)")
-    G = nx.Graph()
-    labels_list = list(topic_labels.values())
+    G          = nx.Graph()
+    labels_list = list(TOPIC_LABELS.values())
     for label in labels_list:
         G.add_node(label)
     for i in range(len(labels_list)):
@@ -148,6 +89,7 @@ with tab1:
     ax3.axis('off')
     st.pyplot(fig3)
     plt.close(fig3)
+
 
 # ════════════════════════════════════════════════════════════════════════════
 # TAB 2 — Severity & Risk
