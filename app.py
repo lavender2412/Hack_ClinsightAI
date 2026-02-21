@@ -3,12 +3,119 @@ import os
 import streamlit as st
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
-import seaborn as sns
+import plotly.graph_objects as go
+import plotly.express as px
 
-st.set_page_config(page_title="ClinsightAI Dashboard", layout="wide")
-st.title("🏥 ClinsightAI — Healthcare Review Intelligence Dashboard")
+# ── Page config & custom CSS ──────────────────────────────────────────────────
+st.set_page_config(
+    page_title="ClinsightAI Dashboard",
+    layout="wide",
+    page_icon="🏥",
+)
+
+st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+html, body, [class*="css"] {
+    font-family: 'DM Sans', sans-serif;
+}
+h1, h2, h3 {
+    font-family: 'DM Serif Display', serif !important;
+    letter-spacing: -0.02em;
+}
+.stApp { background-color: #f6f7f9; }
+
+[data-testid="stSidebar"] {
+    background: linear-gradient(160deg, #0f172a 0%, #1e293b 100%);
+    border-right: 1px solid #334155;
+}
+[data-testid="stSidebar"] * { color: #e2e8f0 !important; }
+
+[data-testid="metric-container"] {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 18px 22px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+[data-testid="metric-container"] label {
+    color: #64748b !important;
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+[data-testid="metric-container"] [data-testid="metric-value"] {
+    color: #0f172a !important;
+    font-size: 1.6rem !important;
+    font-weight: 600 !important;
+}
+.stTabs [data-baseweb="tab-list"] {
+    gap: 6px;
+    background: #ffffff;
+    padding: 8px 10px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.stTabs [data-baseweb="tab"] {
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-weight: 500;
+    font-size: 0.88rem;
+    color: #475569;
+    background: transparent;
+    border: none;
+}
+.stTabs [aria-selected="true"] {
+    background: #0f172a !important;
+    color: #f8fafc !important;
+}
+hr { border-color: #e2e8f0; }
+[data-testid="stDataFrame"] {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+}
+.main-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2.2rem;
+    color: #0f172a;
+    margin-bottom: 0;
+}
+.main-subtitle {
+    color: #64748b;
+    font-size: 0.95rem;
+    margin-top: 2px;
+    margin-bottom: 24px;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ── Plotly theme helpers ──────────────────────────────────────────────────────
+PLOTLY_LAYOUT = dict(
+    font=dict(family="DM Sans, sans-serif", color="#334155"),
+    paper_bgcolor="#ffffff",
+    plot_bgcolor="#f8fafc",
+    title_font=dict(family="DM Serif Display, serif", size=17, color="#0f172a"),
+    margin=dict(l=16, r=16, t=48, b=16),
+    hoverlabel=dict(bgcolor="#0f172a", font_color="#f8fafc", font_family="DM Sans"),
+)
+
+NEG_COLOR   = "#ef4444"
+POS_COLOR   = "#10b981"
+CLASS_PALETTE = {"Systemic": "#ef4444", "Recurring": "#f59e0b", "Isolated": "#10b981"}
+
+def apply_layout(fig, **kwargs):
+    fig.update_layout(**{**PLOTLY_LAYOUT, **kwargs})
+    fig.update_xaxes(gridcolor="#e2e8f0", zeroline=False, showline=False)
+    fig.update_yaxes(gridcolor="#e2e8f0", zeroline=False, showline=False)
+    return fig
+
+# ── Title ─────────────────────────────────────────────────────────────────────
+st.markdown('<p class="main-title">🏥 ClinsightAI</p>', unsafe_allow_html=True)
+st.markdown('<p class="main-subtitle">Healthcare Review Intelligence Dashboard</p>', unsafe_allow_html=True)
 
 # ── Load CSVs ─────────────────────────────────────────────────────────────────
 @st.cache_data
@@ -16,24 +123,21 @@ def load_data():
     theme_df   = pd.read_csv("theme_level_outputs.csv")
     reviews_df = pd.read_csv("review_level_outputs.csv")
     roadmap_df = pd.read_csv("task4_action_roadmap.csv")
-
-    # Rename columns that changed when TF-IDF was added
     theme_df = theme_df.rename(columns={
         "impact_coefficient_topic_part": "impact_coefficient",
         "abs_impact_topic_part":         "abs_impact",
     })
-
     return theme_df, reviews_df, roadmap_df
 
 theme_df, reviews_df, roadmap_df = load_data()
 
 # ── Sidebar ───────────────────────────────────────────────────────────────────
-st.sidebar.header("🔍 Global Filters")
-selected_theme      = st.sidebar.selectbox("Select a Theme", ["All"] + theme_df["theme_label"].tolist())
+st.sidebar.markdown("## 🔍 Global Filters")
+selected_theme         = st.sidebar.selectbox("Theme", ["All"] + theme_df["theme_label"].tolist())
 min_rating, max_rating = st.sidebar.slider("Rating Range", 1, 5, (1, 5))
 
 st.sidebar.divider()
-st.sidebar.subheader("⚠️ Task 3 Controls")
+st.sidebar.markdown("## ⚠️ Task 3 Controls")
 prob_thr      = st.sidebar.slider("Topic probability threshold", 0.05, 0.80, 0.30, 0.05)
 isolated_thr  = st.sidebar.slider("Isolated cutoff (freq <)",    0.01, 0.20, 0.05, 0.01)
 systemic_thr  = st.sidebar.slider("Systemic cutoff (freq ≥)",    0.05, 0.60, 0.20, 0.05)
@@ -43,7 +147,7 @@ risk_mode     = st.sidebar.selectbox("Risk Score Mode", [
 show_only     = st.sidebar.selectbox("Show", ["All", "Systemic only", "Recurring only", "Isolated only"])
 impact_filter = st.sidebar.selectbox("Impact Filter", ["All", "Negative impact only", "Positive impact only"])
 
-# ── Global filtered reviews ───────────────────────────────────────────────────
+# ── Global filter ─────────────────────────────────────────────────────────────
 filtered = reviews_df.copy()
 filtered = filtered[(filtered["Ratings"] >= min_rating) & (filtered["Ratings"] <= max_rating)]
 if selected_theme != "All":
@@ -51,11 +155,11 @@ if selected_theme != "All":
 
 # ── KPI bar ───────────────────────────────────────────────────────────────────
 k1, k2, k3, k4 = st.columns(4)
-k1.metric("Total Reviews (filtered)",  f"{len(filtered):,}")
-k2.metric("Avg Actual Rating",         f"{filtered['Ratings'].mean():.2f} ⭐")
-k3.metric("Avg Predicted Rating",      f"{filtered['predicted_rating'].mean():.2f} ⭐")
+k1.metric("Total Reviews",        f"{len(filtered):,}")
+k2.metric("Avg Actual Rating",    f"{filtered['Ratings'].mean():.2f} ⭐")
+k3.metric("Avg Predicted Rating", f"{filtered['predicted_rating'].mean():.2f} ⭐")
 top_risk = theme_df.sort_values("risk_score", ascending=False).iloc[0]
-k4.metric("Highest Risk Theme",        top_risk["theme_label"], delta=top_risk["issue_class"])
+k4.metric("Highest Risk Theme",   top_risk["theme_label"], delta=top_risk["issue_class"])
 
 st.divider()
 
@@ -70,7 +174,6 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "🧾 JSON Output",
 ])
 
-
 # ════════════════════════════════════════════════════════════════════════════
 # TAB 1 — Theme Discovery
 # ════════════════════════════════════════════════════════════════════════════
@@ -80,31 +183,30 @@ with tab1:
 
     with col1:
         freq_data = theme_df.set_index("theme_label")["dominant_topic_frequency"].sort_values()
-        fig, ax = plt.subplots(figsize=(7, 4))
-        sns.barplot(x=freq_data.values, y=freq_data.index, palette="Blues_d", ax=ax)
-        ax.set_xlabel("Proportion of Reviews")
-        ax.set_title("Theme Frequency (Dominant Topic)")
-        st.pyplot(fig); plt.close(fig)
+        fig = go.Figure(go.Bar(
+            x=freq_data.values, y=freq_data.index, orientation="h",
+            marker=dict(color=freq_data.values, colorscale="Blues",
+                        showscale=False, line=dict(width=0)),
+            hovertemplate="<b>%{y}</b><br>Frequency: %{x:.3f}<extra></extra>",
+        ))
+        apply_layout(fig, title="Theme Frequency (Dominant Topic)",
+                     xaxis_title="Proportion of Reviews", height=360)
+        st.plotly_chart(fig, use_container_width=True)
 
     with col2:
-        fig, ax = plt.subplots(figsize=(6, 5))
-        ax.pie(theme_df["dominant_topic_frequency"], labels=theme_df["theme_label"],
-               autopct='%1.1f%%', startangle=140)
-        ax.set_title("Theme Distribution")
-        st.pyplot(fig); plt.close(fig)
+        fig = go.Figure(go.Pie(
+            labels=theme_df["theme_label"],
+            values=theme_df["dominant_topic_frequency"],
+            hole=0.45,
+            marker=dict(colors=px.colors.qualitative.Pastel),
+            textfont=dict(size=12),
+            hovertemplate="<b>%{label}</b><br>%{percent}<extra></extra>",
+        ))
+        apply_layout(fig, title="Theme Distribution", height=360,
+                     legend=dict(orientation="v", x=1.02, y=0.5))
+        fig.update_traces(textposition="inside")
+        st.plotly_chart(fig, use_container_width=True)
 
-    st.divider()
-    st.subheader("Severity Heatmap")
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        fig, ax = plt.subplots(figsize=(6, 3))
-        sns.heatmap(theme_df.set_index("theme_label")[["severity_score"]],
-                    annot=True, fmt=".4f", cmap="Greens", ax=ax,
-                    linewidths=0.5, annot_kws={"size": 9})
-        ax.set_xlabel("")
-        ax.set_ylabel("")
-        ax.tick_params(axis='y', labelsize=8)
-        st.pyplot(fig); plt.close(fig)
 
 # ════════════════════════════════════════════════════════════════════════════
 # TAB 2 — Rating Impact
@@ -118,21 +220,35 @@ with tab2:
     ]].copy().sort_values("impact_coefficient")
     impact_display.columns = ["Theme", "Coefficient", "CI Low (2.5%)", "CI High (97.5%)", "Stability"]
 
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns([3, 2])
     with col1:
-        fig, ax = plt.subplots(figsize=(7, 4))
-        colors = ["#d73027" if c < 0 else "#1a9850" for c in impact_display["Coefficient"]]
-        ax.barh(impact_display["Theme"], impact_display["Coefficient"], color=colors)
-        ax.axvline(0, color='black', linewidth=0.8, linestyle='--')
-        ax.set_xlabel("Regression Coefficient")
-        ax.set_title("Theme Impact on Star Rating")
-        ax.legend(handles=[
-            mpatches.Patch(color='#d73027', label='Hurts rating'),
-            mpatches.Patch(color='#1a9850', label='Lifts rating')
-        ])
-        st.pyplot(fig); plt.close(fig)
+        colors = [NEG_COLOR if c < 0 else POS_COLOR for c in impact_display["Coefficient"]]
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            x=impact_display["Coefficient"], y=impact_display["Theme"],
+            orientation="h",
+            marker=dict(color=colors, line=dict(width=0)),
+            error_x=dict(
+                type="data", symmetric=False,
+                array=(impact_display["CI High (97.5%)"] - impact_display["Coefficient"]).tolist(),
+                arrayminus=(impact_display["Coefficient"] - impact_display["CI Low (2.5%)"]).tolist(),
+                color="#94a3b8", thickness=1.5, width=4,
+            ),
+            hovertemplate="<b>%{y}</b><br>Coef: %{x:.4f}<extra></extra>",
+            showlegend=False,
+        ))
+        fig.add_trace(go.Bar(x=[None], y=[None], orientation="h",
+                             marker=dict(color=POS_COLOR), name="↑ Lifts rating"))
+        fig.add_trace(go.Bar(x=[None], y=[None], orientation="h",
+                             marker=dict(color=NEG_COLOR), name="↓ Hurts rating"))
+        fig.add_vline(x=0, line_width=1.5, line_color="#64748b")
+        apply_layout(fig, title="Theme Impact on Star Rating",
+                     xaxis_title="Regression Coefficient", height=380,
+                     legend=dict(orientation="h", y=1.08, x=0))
+        st.plotly_chart(fig, use_container_width=True)
+
     with col2:
-        st.dataframe(impact_display.round(4), use_container_width=True)
+        st.dataframe(impact_display.round(4), use_container_width=True, height=380)
 
     st.divider()
     st.subheader("1-Star vs 5-Star Theme Drivers")
@@ -142,12 +258,17 @@ with tab2:
     star_df["Star Group"] = star_df["Star Group"].map({
         "avg_in_1star": "1-Star Reviews", "avg_in_5star": "5-Star Reviews"
     })
-    fig, ax = plt.subplots(figsize=(9, 4))
-    sns.barplot(data=star_df, x="theme_label", y="Avg Topic Probability",
-                hue="Star Group", palette=["#d73027", "#1a9850"], ax=ax)
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=20, ha='right', fontsize=8)
-    ax.set_title("Avg Topic Probability: 1-Star vs 5-Star Reviews")
-    st.pyplot(fig); plt.close(fig)
+    fig = px.bar(
+        star_df, x="theme_label", y="Avg Topic Probability",
+        color="Star Group",
+        color_discrete_map={"1-Star Reviews": NEG_COLOR, "5-Star Reviews": POS_COLOR},
+        barmode="group",
+    )
+    fig.update_layout(xaxis_tickangle=-20, xaxis_tickfont_size=11)
+    apply_layout(fig, title="Avg Topic Probability: 1-Star vs 5-Star Reviews",
+                 xaxis_title="", yaxis_title="Avg Topic Probability", height=380,
+                 legend=dict(title="", orientation="h", y=1.08))
+    st.plotly_chart(fig, use_container_width=True)
 
     st.divider()
     st.subheader("Model Robustness")
@@ -158,44 +279,67 @@ with tab2:
 
 
 # ════════════════════════════════════════════════════════════════════════════
-# TAB 3 — Risk & Systemic Issues (static, from pipeline)
+# TAB 3 — Risk & Systemic Issues
 # ════════════════════════════════════════════════════════════════════════════
 with tab3:
     st.subheader("Theme Risk Ranking")
+
     risk_display = theme_df[[
         "topic_id", "theme_label", "issue_class",
         "present_frequency_(prob>thr)", "impact_coefficient",
         "severity_score", "risk_score", "confidence_stability"
     ]].copy()
 
+    CLASS_BG = {"Systemic": "#fee2e2", "Recurring": "#fef9c3", "Isolated": "#dcfce7"}
     def color_class(val):
-        return {"Systemic":  "background-color: #f8d7da",
-                "Recurring": "background-color: #fff3cd",
-                "Isolated":  "background-color: #d4edda"}.get(val, "")
+        return f"background-color: {CLASS_BG.get(val, '')}; font-weight: 600;"
 
-    st.dataframe(risk_display.style.applymap(color_class, subset=["issue_class"]),
-                 use_container_width=True)
+    st.dataframe(
+        risk_display.style.applymap(color_class, subset=["issue_class"]),
+        use_container_width=True,
+    )
 
     st.divider()
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("Risk Score by Theme")
-        fig, ax = plt.subplots(figsize=(7, 4))
-        sns.barplot(data=theme_df.sort_values("risk_score", ascending=False),
-                    x="risk_score", y="theme_label", palette="Reds_d", ax=ax)
-        ax.set_title("Risk = Frequency × |Impact| × Stability")
-        st.pyplot(fig); plt.close(fig)
+        rs = theme_df.sort_values("risk_score", ascending=False)
+        fig = go.Figure(go.Bar(
+            x=rs["risk_score"], y=rs["theme_label"], orientation="h",
+            marker=dict(color=rs["risk_score"],
+                        colorscale=[[0,"#fca5a5"],[1,"#b91c1c"]],
+                        showscale=False, line=dict(width=0)),
+            hovertemplate="<b>%{y}</b><br>Risk: %{x:.4f}<extra></extra>",
+        ))
+        apply_layout(fig, title="Risk = Frequency × |Impact| × Stability",
+                     xaxis_title="Risk Score", height=360)
+        st.plotly_chart(fig, use_container_width=True)
+
+    with col2:
+        st.subheader("Severity Heatmap")
+        sev = theme_df[["theme_label","severity_score"]].set_index("theme_label")
+        fig = go.Figure(go.Heatmap(
+            z=sev["severity_score"].values.reshape(-1, 1),
+            y=sev.index.tolist(), x=["Severity Score"],
+            colorscale="Reds",
+            text=[[f"{v:.4f}"] for v in sev["severity_score"].values],
+            texttemplate="%{text}",
+            showscale=True,
+        ))
+        apply_layout(fig, title="Severity Score", height=360)
+        fig.update_yaxes(autorange="reversed")
+        st.plotly_chart(fig, use_container_width=True)
 
     st.divider()
     st.subheader("Issue Classification Breakdown")
-    class_counts = theme_df["issue_class"].value_counts()
-    palette_map  = {"Systemic": "#d73027", "Recurring": "#fc8d59", "Isolated": "#1a9850"}
-    fig, ax = plt.subplots(figsize=(5, 3))
-    sns.barplot(x=class_counts.index, y=class_counts.values,
-                palette=[palette_map.get(c, "gray") for c in class_counts.index], ax=ax)
-    ax.set_ylabel("Number of Themes")
-    ax.set_title("Themes by Classification")
-    st.pyplot(fig); plt.close(fig)
+    class_counts = theme_df["issue_class"].value_counts().reset_index()
+    class_counts.columns = ["Class", "Count"]
+    fig = px.bar(class_counts, x="Class", y="Count", color="Class",
+                 color_discrete_map=CLASS_PALETTE, text="Count")
+    fig.update_traces(textposition="outside")
+    apply_layout(fig, title="Themes by Classification", showlegend=False,
+                 xaxis_title="", height=320)
+    st.plotly_chart(fig, use_container_width=True)
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -218,7 +362,7 @@ with tab4:
     high_impact_cutoff = np.median(abs_impacts)
 
     def classify_live(freq, abs_impact):
-        if freq < isolated_thr:                                       return "Isolated"
+        if freq < isolated_thr: return "Isolated"
         if freq >= systemic_thr and abs_impact >= high_impact_cutoff: return "Systemic"
         return "Recurring"
 
@@ -245,10 +389,10 @@ with tab4:
     task3_df = pd.DataFrame(rows)
     risk_col = "risk_score_simple" if risk_mode.startswith("Simple") else "risk_score_confidence"
 
-    if show_only == "Systemic only":      task3_df = task3_df[task3_df["issue_class"] == "Systemic"]
-    elif show_only == "Recurring only":   task3_df = task3_df[task3_df["issue_class"] == "Recurring"]
-    elif show_only == "Isolated only":    task3_df = task3_df[task3_df["issue_class"] == "Isolated"]
-    if impact_filter == "Negative impact only":   task3_df = task3_df[task3_df["impact_coefficient"] < 0]
+    if show_only == "Systemic only":    task3_df = task3_df[task3_df["issue_class"] == "Systemic"]
+    elif show_only == "Recurring only": task3_df = task3_df[task3_df["issue_class"] == "Recurring"]
+    elif show_only == "Isolated only":  task3_df = task3_df[task3_df["issue_class"] == "Isolated"]
+    if impact_filter == "Negative impact only": task3_df = task3_df[task3_df["impact_coefficient"] < 0]
     elif impact_filter == "Positive impact only": task3_df = task3_df[task3_df["impact_coefficient"] > 0]
     task3_df = task3_df.sort_values(risk_col, ascending=False)
 
@@ -261,10 +405,22 @@ with tab4:
     left, right = st.columns(2)
     with left:
         st.subheader("Frequency by Theme")
-        st.bar_chart(task3_df.set_index("theme_label")["present_frequency"])
+        fig = px.bar(task3_df, x="present_frequency", y="theme_label",
+                     orientation="h", color_discrete_sequence=["#0ea5e9"])
+        apply_layout(fig, title="Topic Presence Frequency",
+                     xaxis_title="Frequency", height=340, showlegend=False)
+        fig.update_traces(marker_line_width=0)
+        st.plotly_chart(fig, use_container_width=True)
+
     with right:
-        st.subheader(f"Risk Score ({risk_mode})")
-        st.bar_chart(task3_df.set_index("theme_label")[risk_col])
+        st.subheader(f"Risk Score ({risk_mode.split('(')[0].strip()})")
+        fig = px.bar(task3_df, x=risk_col, y="theme_label",
+                     orientation="h", color="issue_class",
+                     color_discrete_map=CLASS_PALETTE)
+        apply_layout(fig, title="Risk Score by Theme", xaxis_title="Risk Score",
+                     height=340, legend=dict(title="Class", orientation="h", y=1.1))
+        fig.update_traces(marker_line_width=0)
+        st.plotly_chart(fig, use_container_width=True)
 
     st.divider()
     st.dataframe(task3_df[[
@@ -276,12 +432,18 @@ with tab4:
     st.divider()
     st.subheader("Drilldown: Reviews triggering a selected theme")
     theme_to_topic_id = {v: k for k, v in topic_id_to_theme.items()}
-    theme_pick4       = st.selectbox("Select theme", task3_df["theme_label"].tolist() if len(task3_df) > 0 else theme_df["theme_label"].tolist(), key="t4_theme")
-    picked_prob_col   = f"topic_prob_{theme_to_topic_id.get(theme_pick4, 1)}"
-    subset            = reviews_df[reviews_df[picked_prob_col] > prob_thr].sort_values("Ratings")
+    theme_pick4 = st.selectbox(
+        "Select theme",
+        task3_df["theme_label"].tolist() if len(task3_df) > 0 else theme_df["theme_label"].tolist(),
+        key="t4_theme",
+    )
+    picked_prob_col = f"topic_prob_{theme_to_topic_id.get(theme_pick4, 1)}"
+    subset = reviews_df[reviews_df[picked_prob_col] > prob_thr].sort_values("Ratings")
     st.write(f"Reviews where **{theme_pick4}** prob > {prob_thr:.2f} — Count: {len(subset):,}")
-    st.dataframe(subset[["Feedback", "Ratings", "predicted_rating", "residual", "theme_label", picked_prob_col]].head(150),
-                 use_container_width=True)
+    st.dataframe(
+        subset[["Feedback","Ratings","predicted_rating","residual","theme_label",picked_prob_col]].head(150),
+        use_container_width=True,
+    )
 
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -296,9 +458,20 @@ with tab5:
     if show_bucket != "All":
         view = view[view["bucket"] == show_bucket]
     st.dataframe(
-        view[["priority_rank", "theme_label", "issue_class", "risk_score", "effort", "recommendation"]],
-        use_container_width=True
+        view[["priority_rank","theme_label","issue_class","risk_score","effort","recommendation"]],
+        use_container_width=True,
     )
+
+    fig = px.scatter(
+        roadmap_df, x="priority_rank", y="risk_score",
+        size="risk_score", color="effort", text="theme_label",
+        color_discrete_sequence=px.colors.qualitative.Set2, size_max=40,
+    )
+    fig.update_traces(textposition="top center", textfont_size=11)
+    apply_layout(fig, title="Priority vs. Risk Score",
+                 xaxis_title="Priority Rank", yaxis_title="Risk Score",
+                 height=360, legend=dict(title="Effort"))
+    st.plotly_chart(fig, use_container_width=True)
 
     st.subheader("KPIs for Selected Theme")
     theme_pick5 = st.selectbox("Pick a theme to view KPIs", roadmap_df["theme_label"].tolist(), key="t5_kpi")
@@ -310,30 +483,30 @@ with tab5:
         st.write(f"- **{item['kpi']}** → Target: **{item['target']}**")
 
     st.divider()
-    st.subheader("Per-Review Recommendations (Data Point Level)")
+    st.subheader("Per-Review Recommendations")
     t4_min, t4_max = st.slider("Filter rating range", 1, 5, (1, 5), key="t5_rating")
     theme_filter_t5 = st.selectbox(
         "Filter by review theme for action",
         ["All"] + sorted(reviews_df["review_theme_for_action"].dropna().unique().tolist()),
-        key="t5_theme"
+        key="t5_theme",
     )
     t5_filtered = reviews_df[(reviews_df["Ratings"] >= t4_min) & (reviews_df["Ratings"] <= t4_max)].copy()
     if theme_filter_t5 != "All":
         t5_filtered = t5_filtered[t5_filtered["review_theme_for_action"] == theme_filter_t5]
     t5_filtered = t5_filtered.sort_values("kpi_urgency_score", ascending=False)
 
-    st.write("Tip: Highest urgency reviews appear first (low rating + high priority theme).")
+    st.caption("Highest urgency reviews appear first (low rating + high priority theme).")
     st.dataframe(t5_filtered[[
-        "Feedback", "Ratings", "predicted_rating", "residual",
-        "review_theme_for_action", "theme_priority_rank",
-        "effort_estimate", "kpi_urgency_score"
+        "Feedback","Ratings","predicted_rating","residual",
+        "review_theme_for_action","theme_priority_rank",
+        "effort_estimate","kpi_urgency_score"
     ]].head(200), use_container_width=True)
 
     st.divider()
     st.subheader("Drilldown: One Review → Recommendation + KPI Pack")
     if len(t5_filtered) > 0:
-        t5_idx = st.number_input("Pick a row index (0..N-1 of filtered list)",
-                                 min_value=0, max_value=len(t5_filtered)-1, value=0, key="t5_idx")
+        t5_idx = st.number_input("Pick a row index", min_value=0,
+                                 max_value=len(t5_filtered)-1, value=0, key="t5_idx")
         t5_row = t5_filtered.iloc[int(t5_idx)]
         st.markdown(f"**Review:** {t5_row['Feedback']}")
         st.markdown(f"**Rating:** {t5_row['Ratings']} | **Predicted:** {t5_row['predicted_rating']:.2f} | **Residual:** {t5_row['residual']:.2f}")
@@ -368,10 +541,24 @@ with tab5:
 with tab6:
     st.subheader("Review Explorer")
     st.caption("Filtered by sidebar. Sort by residual to find where the model under/over-predicts.")
+
+    rating_counts = filtered["Ratings"].value_counts().sort_index()
+    fig = px.bar(
+        x=rating_counts.index, y=rating_counts.values,
+        labels={"x": "Star Rating", "y": "Count"},
+        color=rating_counts.values,
+        color_continuous_scale=["#ef4444","#f97316","#eab308","#84cc16","#10b981"],
+        text=rating_counts.values,
+    )
+    fig.update_traces(textposition="outside", marker_line_width=0)
+    apply_layout(fig, title="Rating Distribution (filtered)", height=280,
+                 showlegend=False, coloraxis_showscale=False)
+    st.plotly_chart(fig, use_container_width=True)
+
     st.dataframe(filtered[[
-        "Feedback", "Ratings", "predicted_rating", "residual",
-        "theme_label", "dominant_contributor_theme",
-        "most_positive_theme", "most_negative_theme"
+        "Feedback","Ratings","predicted_rating","residual",
+        "theme_label","dominant_contributor_theme",
+        "most_positive_theme","most_negative_theme"
     ]].head(300), use_container_width=True)
 
     st.divider()
@@ -388,10 +575,23 @@ with tab6:
         c1, c2 = st.columns(2)
         with c1:
             st.write("Topic Probabilities")
-            st.bar_chart(row[prob_cols].rename(lambda x: x.replace("topic_prob_", "Topic ")))
+            vals = row[prob_cols].rename(lambda x: x.replace("topic_prob_", "Topic "))
+            fig = px.bar(x=vals.index, y=vals.values, color_discrete_sequence=["#0ea5e9"])
+            apply_layout(fig, title="", xaxis_title="", yaxis_title="Probability",
+                         height=280, showlegend=False)
+            fig.update_traces(marker_line_width=0)
+            st.plotly_chart(fig, use_container_width=True)
         with c2:
             st.write("Topic Contributions")
-            st.bar_chart(row[contrib_cols].rename(lambda x: x.replace("contrib_", "Topic ")))
+            cvals = row[contrib_cols].rename(lambda x: x.replace("contrib_", "Topic "))
+            colors_c = [POS_COLOR if v >= 0 else NEG_COLOR for v in cvals.values]
+            fig = go.Figure(go.Bar(
+                x=cvals.index, y=cvals.values,
+                marker=dict(color=colors_c, line=dict(width=0)),
+            ))
+            apply_layout(fig, title="", xaxis_title="", yaxis_title="Contribution",
+                         height=280, showlegend=False)
+            st.plotly_chart(fig, use_container_width=True)
     else:
         st.info("No reviews match the current filters.")
 
@@ -452,7 +652,7 @@ with tab7:
             label="⬇️ Download clinsight_output.json",
             data=json.dumps(data, indent=2),
             file_name="clinsight_output.json",
-            mime="application/json"
+            mime="application/json",
         )
     else:
         st.warning("clinsight_output.json not found. Run `python3 run_pipeline.py` first.")
