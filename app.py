@@ -95,11 +95,16 @@ with tab1:
 
     st.divider()
     st.subheader("Severity Heatmap")
-    fig, ax = plt.subplots(figsize=(5, 4))
-    sns.heatmap(theme_df.set_index("theme_label")[["severity_score"]],
-                annot=True, fmt=".4f", cmap="Reds", ax=ax)
-    st.pyplot(fig); plt.close(fig)
-
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        fig, ax = plt.subplots(figsize=(6, 3))
+        sns.heatmap(theme_df.set_index("theme_label")[["severity_score"]],
+                    annot=True, fmt=".4f", cmap="Greens", ax=ax,
+                    linewidths=0.5, annot_kws={"size": 9})
+        ax.set_xlabel("")
+        ax.set_ylabel("")
+        ax.tick_params(axis='y', labelsize=8)
+        st.pyplot(fig); plt.close(fig)
 
 # ════════════════════════════════════════════════════════════════════════════
 # TAB 2 — Rating Impact
