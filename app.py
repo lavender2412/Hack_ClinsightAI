@@ -255,8 +255,11 @@ with tab2:
             size=16,
             line=dict(color="#ffffff", width=2.5),
         ),
-        text=[f"  {c:+.4f}" for c in impact_plot["Coefficient"]],
-        textposition="middle right",
+        text=[f"{c:+.4f}" for c in impact_plot["Coefficient"]],
+        textposition=[
+            "middle left" if c >= 0 else "middle right"
+            for c in impact_plot["Coefficient"]
+        ],
         textfont=dict(size=11, color="#475569", family="DM Sans"),
         hovertemplate="<b>%{customdata}</b><br>Coefficient: %{x:.4f}<extra></extra>",
         customdata=impact_plot["Theme"],
