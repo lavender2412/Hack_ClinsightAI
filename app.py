@@ -309,17 +309,23 @@ with tab2:
         "avg_in_1star": "1-Star Reviews", "avg_in_5star": "5-Star Reviews"
     })
     fig = px.bar(
-        star_df, x="theme_label", y="Avg Topic Probability",
+        star_df, x="Avg Topic Probability", y="theme_label",
         color="Star Group",
-        color_discrete_map={"1-Star Reviews": NEG_COLOR, "5-Star Reviews": POS_COLOR},
+        color_discrete_map={
+            "1-Star Reviews": "#86efac",   # light green
+            "5-Star Reviews": "#16a34a",   # deep green
+        },
         barmode="group",
+        orientation="h",
     )
-    fig.update_layout(xaxis_tickangle=-20, xaxis_tickfont_size=11)
     apply_layout(fig, title="Avg Topic Probability: 1-Star vs 5-Star Reviews",
-                 xaxis_title="", yaxis_title="Avg Topic Probability", height=380,
+                 xaxis_title="Avg Topic Probability", yaxis_title="",
+                 height=380,
+                 margin=dict(l=260, r=40, t=48, b=40),
                  legend=dict(title="", orientation="h", y=1.08))
+    fig.update_traces(marker_line_width=0)
     st.plotly_chart(fig, use_container_width=True)
-
+    
     st.divider()
     st.subheader("Model Robustness")
     m1, m2, m3 = st.columns(3)
