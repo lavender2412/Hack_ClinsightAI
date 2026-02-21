@@ -140,6 +140,14 @@ with tab2:
     st.pyplot(fig); plt.close(fig)
 
     st.divider()
+    
+    # DEBUG — remove after fixing
+    st.markdown("### Debug Info")
+    st.write("CV R2 mean value:", theme_df['cv_r2_mean'].iloc[0])
+    st.write("CV RMSE mean value:", theme_df['cv_rmse_mean'].iloc[0])
+    st.write("CSV columns:", theme_df.columns.tolist())
+    st.dataframe(theme_df[['theme_label', 'cv_r2_mean', 'cv_rmse_mean']].head())
+
     st.subheader("Model Robustness")
     m1, m2, m3 = st.columns(3)
     m1.metric("Cross-validated R²",   f"{theme_df['cv_r2_mean'].iloc[0]:.3f}")
