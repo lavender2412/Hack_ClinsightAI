@@ -63,7 +63,7 @@ st.divider()
 
 # ── Tabs ──────────────────────────────────────────────────────────────────────
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-    "📊 Theme Discovery",
+    "📊 Operational Themes",
     "📈 Rating Impact",
     "⚠️ Risk & Systemic Issues",
     "🔁 Recurring (Interactive)",
@@ -94,7 +94,7 @@ with tab1:
                autopct='%1.1f%%', startangle=140)
         ax.set_title("Theme Distribution")
         st.pyplot(fig); plt.close(fig)
-
+'''
     st.divider()
     st.subheader("Top Words per Topic")
     cols = st.columns(len(theme_df))
@@ -104,7 +104,7 @@ with tab1:
             for w in row['top_words'].split(' | ')[:10]:
                 st.markdown(f"- {w}")
 
-
+'''
 # ════════════════════════════════════════════════════════════════════════════
 # TAB 2 — Rating Impact
 # ════════════════════════════════════════════════════════════════════════════
