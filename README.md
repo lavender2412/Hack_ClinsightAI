@@ -1,136 +1,141 @@
-# ClinsightAI - Clinical Hospital Insight Analysis
+# ClinsightAI
 
-## 🏥 Project Overview
-
-**ClinsightAI** (Code_Blooded_ClinsightAI) is an advanced clinical intelligence platform designed to analyze hospital operations, patient data, and care quality metrics. This project leverages data-driven insights to identify systemic issues, recurring problems, and actionable improvement roadmaps for healthcare institutions.
-
-The system processes hospital datasets to generate comprehensive reports at multiple analytical levels (review-level, theme-level) and creates strategic recommendations for operational improvements.
-
-## 🚀 Live Demo
+> A multi-task clinical intelligence pipeline that transforms raw hospital patient reviews into structured insights, theme-level diagnostics, and a priority-ranked operational action roadmap.
 
 [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://hackclinsightai.streamlit.app)
+![Python](https://img.shields.io/badge/Python-3.7+-blue?logo=python)
+![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-red?logo=streamlit)
+![ML](https://img.shields.io/badge/ML-LDA%20%7C%20Ridge%20Regression%20%7C%20TF--IDF-green)
 
+---
 
-## 🎯 Key Features
+## What It Does
 
-- **Multi-Level Analysis**: Analyze hospital data at review, theme, and systemic levels
-- **Quality Metric Identification**: Detect and track quality issues and their patterns
-- **Systemic Problem Detection**: Identify recurring systemic issues in hospital operations
-- **Action Roadmap Generation**: Create prioritized action plans for hospital improvements
-- **Data Processing Pipeline**: Automated pipeline for transforming raw hospital data into actionable insights
-- **JSON & CSV Output**: Generate outputs in multiple formats for further analysis and reporting
+ClinsightAI processes hospital patient reviews and outputs four layers of analysis:
 
+| Output | Description |
+|---|---|
+| **Review-level** | Per-review dominant theme, predicted rating, contribution scores, and recommended action |
+| **Theme-level** | Rating impact per theme with bootstrap confidence intervals and risk scores |
+| **Systemic issues** | Themes classified as Isolated, Recurring, or Systemic based on frequency and impact |
+| **Action roadmap** | Priority-ranked improvement initiatives with effort estimates and KPI targets per theme |
 
-## 📊 Data Files
+---
 
-### Input Data
-- **hospital.csv**: Contains raw hospital operational data including patient reviews, quality metrics, and facility information
+## How It Works
 
-### Output Files
-- **clinsight_output.json**: Structured JSON output with comprehensive insights
-- **review_level_outputs.csv**: Granular analysis at individual review level
-- **theme_level_outputs.csv**: Aggregated insights grouped by themes/categories
-- **task3_recurring_systemic.csv**: Analysis of recurring and systemic problems
-- **task4_action_roadmap.csv**: Prioritized action items and improvement recommendations
+### 1. Topic Modeling — LDA
+Five clinical themes are extracted from patient review text using **Latent Dirichlet Allocation**:
+- Wait Time & Operational Efficiency
+- Overall Service & Facility Cleanliness
+- Emergency Service Failures
+- Clinical Care & Treatment Quality
+- Consultation & Positive Patient Experience
 
-## 🚀 Getting Started
+### 2. Rating Prediction — Ridge Regression
+A **Ridge Regression** model is trained on combined **TF-IDF** unigram/bigram features and LDA topic probabilities to predict patient ratings, improving R² from **0.046 to 0.302**.
 
-### Prerequisites
-- Python 3.7+
-- pip (Python package manager)
+### 3. Per-Review Explainability
+Each review receives:
+- Dominant theme label
+- Local theme contribution scores
+- Most positive and most negative driving theme
+- Predicted rating and residual
 
-### Installation
+### 4. Systemic Issue Classification
+Themes are classified by frequency and impact:
+- **Isolated** — appears in < 5% of reviews
+- **Recurring** — moderate frequency, moderate impact
+- **Systemic** — high frequency and high impact coefficient
 
-1. Clone the repository:
+### 5. Action Roadmap
+Each theme is assigned a priority rank, effort estimate (Quick Win or High Effort), KPI targets, and operational recommendations — exported as a structured CSV and surfaced in the Streamlit dashboard.
+
+---
+
+## Pipeline Architecture
+```
+hospital.csv
+     │
+     ▼
+Text Preprocessing (NLTK, lemmatization, stopword removal)
+     │
+     ▼
+LDA Topic Modeling (CountVectorizer → 5 themes)
+     │
+     ├──► Theme probabilities per review
+     │
+TF-IDF (unigram + bigram) + Topic features → Ridge Regression
+     │
+     ├──► Predicted ratings
+     ├──► Per-review contribution scores
+     ├──► Bootstrap coefficient CIs
+     │
+     ▼
+Systemic Issue Classification + Risk Scoring
+     │
+     ▼
+Priority-Ranked Action Roadmap
+     │
+     ▼
+Streamlit Dashboard + CSV/JSON Exports
+```
+
+---
+
+## Output Files
+
+| File | Contents |
+|---|---|
+| `review_level_outputs.csv` | Per-review themes, predictions, contributions, actions |
+| `theme_level_outputs.csv` | Theme-level impact, risk scores, bootstrap CIs |
+| `task3_recurring_systemic.csv` | Issue classification by frequency and impact |
+| `task4_action_roadmap.csv` | Priority-ranked roadmap with KPIs and effort estimates |
+| `clinsight_output.json` | Structured JSON of all outputs |
+
+---
+
+## Getting Started
 ```bash
 git clone https://github.com/lavender2412/Code_Blooded_ClinsightAI.git
 cd Code_Blooded_ClinsightAI
-
 pip install -r requirements.txt
+```
 
-Dependencies
-
-The project requires the following Python packages:
-
-For detailed dependencies, see requirements.txt.
-💻 Usage
-
-Running the Data Processing Pipeline
-
-Execute the main pipeline to process hospital data and generate all outputs:
-
-bash
+**Run the pipeline:**
+```bash
 python run_pipeline.py
-This will:
+```
 
-Load hospital data from hospital.csv
-Process and analyze the data through multiple analysis layers
-Generate CSV outputs (review-level, theme-level, systemic, and roadmap)
-Create structured JSON output (clinsight_output.json)
-Running the Web Application
-
-Launch the interactive Streamlit dashboard:
-
-bash
+**Launch the dashboard:**
+```bash
 streamlit run app.py
-This provides a user-friendly interface to:
+```
 
-Explore hospital insights
-View analysis results
-Visualize key metrics
-Download reports
-📈 Analysis Outputs Explained
+---
 
-Review Level Analysis
+## Project Structure
+```
+Code_Blooded_ClinsightAI/
+├── pipeline/                  # Core analysis modules
+├── app.py                     # Streamlit dashboard
+├── run_pipeline.py            # Pipeline entry point
+├── hospital.csv               # Input data
+├── review_level_outputs.csv   # Output: per-review analysis
+├── theme_level_outputs.csv    # Output: theme diagnostics
+├── task3_recurring_systemic.csv  # Output: systemic classification
+├── task4_action_roadmap.csv   # Output: action roadmap
+├── clinsight_output.json      # Output: structured JSON
+└── requirements.txt
+```
 
-Individual review-based metrics
-Granular quality indicators
-Detailed feedback and findings
-Theme Level Analysis
+---
 
-Aggregated insights across similar issues
-Category-based analysis
-Pattern identification
-Recurring Systemic Issues
+## Tech Stack
 
-Problems appearing across multiple reviews
-Systemic root causes
-Impact severity and frequency
-Action Roadmap
-
-Prioritized improvement initiatives
-Implementation recommendations
-Expected outcomes and metrics
-🔄 Pipeline Architecture
-
-The project uses a modular pipeline approach:
-
-Data Ingestion: Load and validate hospital data
-Data Cleaning: Standardize and prepare data for analysis
-Analysis Engine: Run multi-level analytical processes
-Insight Generation: Create actionable recommendations
-Report Generation: Export results in multiple formats
-📝 Project Workflow
-
-Input: Hospital data (CSV format)
-Processing: Run run_pipeline.py to execute analysis
-Visualization: Use app.py for interactive exploration
-Output: Access generated reports and CSV files
-Action: Implement recommendations from action roadmap
-🎓 Use Cases
-
-Hospital quality improvement initiatives Patient experience analysis, Operational efficiency assessment, Systemic problem identification and Strategic planning for healthcare institutions
-
-📊 Technology Stack
-Backend: Python 3.7+
-Data Processing: Pandas, NumPy
-Frontend: Streamlit
-Data Formats: CSV, JSON
-🤝 Contributing
-
-Contributions are welcome! Please feel free to submit pull requests or open issues for bug reports and feature requests.
-
-
-
-
-
+| Layer | Tools |
+|---|---|
+| Data Processing | Python, Pandas, NumPy, NLTK |
+| ML & NLP | Scikit-learn, LDA, TF-IDF, Ridge Regression, SciPy |
+| Visualization | Streamlit |
+| Output Formats | CSV, JSON |
